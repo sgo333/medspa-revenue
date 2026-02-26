@@ -809,17 +809,24 @@ function animateValue(id, target) {
   }, 16);
 }
 
-function submitEmail() {
+async function submitEmail() {
   const email = document.getElementById('ctaEmail').value;
   if (!email || !email.includes('@')) {
     document.getElementById('ctaEmail').style.borderColor = 'var(--rose)';
     return;
   }
+
+  try {
+    await fetch('https://formspree.io/f/xnjbwwkj', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    });
+  } catch(e) { /* fail silently */ }
+
   document.querySelector('.email-group').style.display = 'none';
   document.querySelector('.cta-text').style.display = 'none';
   document.getElementById('successMsg').style.display = 'block';
-  // In production: send to your email capture / CRM
-  console.log('Email captured:', email);
 }
 
 // Initialize
