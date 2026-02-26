@@ -376,49 +376,53 @@
   .cta-section {
     border-top: 1px solid rgba(201,169,110,0.2);
     padding-top: 30px;
-    display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
   }
 
   .cta-text {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 18px;
+    font-size: 20px;
     font-style: italic;
-    color: rgba(255,255,255,0.6);
-    flex: 1;
-    min-width: 200px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 22px;
+    line-height: 1.4;
   }
 
-  .email-group {
-    display: flex;
-    gap: 0;
-    flex: 1;
-    min-width: 260px;
+  .lead-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
-  .email-group input[type="email"] {
+  @media (max-width: 600px) {
+    .lead-form { grid-template-columns: 1fr; }
+  }
+
+  .lead-form input {
     font-family: 'Jost', sans-serif;
     font-size: 13px;
     font-weight: 300;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(201,169,110,0.25);
-    border-right: none;
-    border-radius: 2px 0 0 2px;
+    border-radius: 2px;
     padding: 14px 18px;
     color: white;
-    flex: 1;
     outline: none;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, background 0.3s;
+    width: 100%;
   }
 
-  .email-group input[type="email"]:focus {
+  .lead-form input:focus {
     border-color: var(--gold);
+    background: rgba(255,255,255,0.09);
   }
 
-  .email-group input::placeholder { color: rgba(255,255,255,0.3); }
+  .lead-form input::placeholder { color: rgba(255,255,255,0.3); }
+
+  .lead-form input.error { border-color: var(--rose); }
+
+  .lead-form .btn-gold {
+    grid-column: 1 / -1;
+  }
 
   .btn-gold {
     font-family: 'Jost', sans-serif;
@@ -429,14 +433,16 @@
     background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
     color: white;
     border: none;
-    padding: 14px 24px;
-    border-radius: 0 2px 2px 0;
+    padding: 16px 24px;
+    border-radius: 2px;
     cursor: pointer;
     white-space: nowrap;
     transition: opacity 0.2s, transform 0.2s;
+    width: 100%;
   }
 
-  .btn-gold:hover { opacity: 0.9; transform: translateX(1px); }
+  .btn-gold:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
   .success-msg {
     display: none;
@@ -690,12 +696,14 @@
 
     <div class="cta-section">
       <p class="cta-text">Want this entire system built and running for you — done for you, every month?</p>
-      <div class="email-group">
-        <input type="email" id="ctaEmail" placeholder="Your email address">
-        <button class="btn-gold" onclick="submitEmail()">Get Started →</button>
+      <div class="lead-form" id="leadForm">
+        <input type="text"  id="ctaPractice" placeholder="Practice name" autocomplete="organization">
+        <input type="tel"   id="ctaPhone"    placeholder="Phone number" autocomplete="tel">
+        <input type="email" id="ctaEmail"    placeholder="Email address" autocomplete="email" style="grid-column:1/-1;">
+        <button class="btn-gold" id="submitBtn" onclick="submitLead()">Get My Free Marketing System →</button>
       </div>
+      <p class="success-msg" id="successMsg">✦ Perfect — we'll be in touch within 24 hours. Keep an eye on your inbox!</p>
     </div>
-    <p class="success-msg" id="successMsg">✦ Perfect. Expect a message within 24 hours.</p>
   </div>
 
   <div class="footer-note">
@@ -809,22 +817,40 @@ function animateValue(id, target) {
   }, 16);
 }
 
-async function submitEmail() {
-  const email = document.getElementById('ctaEmail').value;
-  if (!email || !email.includes('@')) {
-    document.getElementById('ctaEmail').style.borderColor = 'var(--rose)';
-    return;
-  }
+async function submitLead() {
+  const practice = document.getElementById('ctaPractice').value.trim();
+  const phone    = document.getElementById('ctaPhone').value.trim();
+  const email    = document.getElementById('ctaEmail').value.trim();
+  let valid = true;
+
+  // Clear previous errors
+  ['ctaPractice','ctaPhone','ctaEmail'].forEach(id => {
+    document.getElementById(id).classList.remove('error');
+  });
+
+  if (!practice) { document.getElementById('ctaPractice').classList.add('error'); valid = false; }
+  if (!phone)    { document.getElementById('ctaPhone').classList.add('error');    valid = false; }
+  if (!email || !email.includes('@')) { document.getElementById('ctaEmail').classList.add('error'); valid = false; }
+  if (!valid) return;
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
 
   try {
     await fetch('https://formspree.io/f/xnjbwwkj', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email })
+      body: JSON.stringify({
+        practice_name: practice,
+        phone:         phone,
+        email:         email,
+        _subject:      '🌿 New Med Spa Calculator Lead: ' + practice
+      })
     });
-  } catch(e) { /* fail silently */ }
+  } catch(e) { /* fail silently — still show success */ }
 
-  document.querySelector('.email-group').style.display = 'none';
+  document.getElementById('leadForm').style.display = 'none';
   document.querySelector('.cta-text').style.display = 'none';
   document.getElementById('successMsg').style.display = 'block';
 }
